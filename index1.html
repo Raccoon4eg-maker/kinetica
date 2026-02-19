@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RACCOON4EG — PORTFOLIO</title>
+    
+    <meta name="description" content="Raccoon4eg Graphic Design Portfolio. Creating visual systems, art direction, brand identity, posters, and web design.">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;1,400;1,600&display=swap" rel="stylesheet">
+
+    <script src="https://unpkg.com/@studio-freight/lenis@1.0.33/dist/lenis.min.js"></script>
+
+    <style>
+        /* --- 1. CSS STYLES --- */
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            cursor: none !important; 
+        }
+
+        html.lenis { height: auto; }
+        .lenis.lenis-smooth { scroll-behavior: auto !important; }
+        .lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
+        .lenis.lenis-stopped { overflow: hidden; }
+        .lenis.lenis-scrolling iframe { pointer-events: none; }
+
+        body {
+            background-color: #050505;
+            color: #e0e0e0;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* --- АНАЛОГОВЫЙ ШУМ --- */
+        body::after {
+            content: "";
+            position: fixed; top: -50%; left: -50%; right: -50%; bottom: -50%;
+            width: 200%; height: 200vh;
+            background: transparent url('http://assets.iceable.com/img/noise-transparent.png') repeat 0 0;
+            animation: bg-animation .2s infinite;
+            opacity: 0.6; 
+            visibility: visible;
+            pointer-events: none;
+            z-index: 9998; 
+        }
+        @keyframes bg-animation {
+            0% { transform: translate(0,0) }
+            10% { transform: translate(-5%,-5%) }
+            20% { transform: translate(-10%,5%) }
+            30% { transform: translate(5%,-10%) }
+            40% { transform: translate(-5%,15%) }
+            50% { transform: translate(-10%,5%) }
+            60% { transform: translate(15%,0) }
+            70% { transform: translate(0,15%) }
+            80% { transform: translate(3%,35%) }
+            90% { transform: translate(-10%,10%) }
+        }
+
+        /* --- КУРСОР --- */
+        .custom-cursor {
+            position: fixed; top: 0; left: 0; width: 8px; height: 8px; background-color: #fff;
+            transform: translate(-50%, -50%) rotate(45deg); pointer-events: none; z-index: 100000; 
+            mix-blend-mode: difference; 
+            transition: width 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), height 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.3s, border 0.3s, transform 0.1s linear; 
+        }
+        .custom-cursor.hovered {
+            width: 40px; height: 40px; background-color: transparent; border: 1px solid rgba(255, 255, 255, 0.8);
+            transform: translate(-50%, -50%) rotate(90deg); 
+        }
+
+        .accent-font { font-family: 'Cormorant Garamond', serif; font-style: italic; font-weight: 400; text-transform: none; letter-spacing: 0.02em; }
+        .hero-title .accent-font { font-size: 1.1em; text-transform: lowercase; }
+
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+        a { text-decoration: none; color: inherit; transition: color 0.3s ease; }
+
+        /* --- ПРЕЛОАДЕР --- */
+        .loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: #050505; z-index: 9999;
+            display: flex; justify-content: flex-end; align-items: flex-end; padding: 2rem;
+            transition: transform 0.8s cubic-bezier(0.7, 0, 0.3, 1);
+        }
+        .counter { font-size: 15vw; line-height: 1; font-weight: bold; font-variant-numeric: tabular-nums; color: #fff; }
+
+        /* --- ВИДЕО ГЕРОЙ --- */
+        .video-hero-container { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; z-index: -1; display: flex; align-items: center; justify-content: center; background: #000; }
+        .bg-video { position: absolute; width: 100%; height: 100%; object-fit: cover; opacity: 0.6; transform-origin: center; }
+        .center-video-wrapper { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 15vw; aspect-ratio: 1 / 1; overflow: hidden; box-shadow: 0 0 60px rgba(0,0,0,0.6); z-index: 2; }
+        .center-video { width: 100%; height: 100%; object-fit: cover; }
+        .scroll-hint { position: absolute; bottom: 50%; left: 2rem; transform: translateY(50%) rotate(180deg); font-size: 0.8rem; text-transform: uppercase; writing-mode: vertical-rl; z-index: 10; mix-blend-mode: difference; }
+
+        .main-content { position: relative; z-index: 10; }
+        .spacer { height: 100vh; width: 100%; background: transparent; }
+        .glass-panel { background: rgba(5, 5, 5, 0.3); backdrop-filter: blur(8px); border-bottom: 1px solid rgba(255,255,255,0.05); }
+
+        /* --- АНИМАЦИЯ ПОЯВЛЕНИЯ ТЕКСТА (HERO MASK REVEAL) --- */
+        header.hero { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; padding: 2rem; }
+        h1.hero-title { font-size: 11vw; line-height: 0.85; text-transform: uppercase; font-weight: 400; letter-spacing: -0.02em; color: #fff; }
+        
+        .hero-title-line { 
+            display: block; 
+            overflow: hidden; 
+            padding-bottom: 0.25em; /* Даем место для выносного хвостика буквы g */
+            margin-bottom: -0.25em; /* Компенсируем этот отступ, чтобы строки остались плотными */
+        }
+        .hero-title-line span { 
+            display: block; 
+            transform: translateY(120%); /* Чуть увеличили сдвиг, чтобы текст точно спрятался за новую маску */
+            transition: transform 1.2s cubic-bezier(0.2, 0.8, 0.2, 1); 
+        }
+        header.hero.loaded .hero-title-line span { transform: translateY(0); }
+
+        /* --- SCROLL REVEAL ДЛЯ ОСТАЛЬНЫХ БЛОКОВ --- */
+        .reveal-up { opacity: 0; transform: translateY(40px); transition: opacity 1s ease, transform 1.2s cubic-bezier(0.2, 0.8, 0.2, 1); }
+        .reveal-up.in-view { opacity: 1; transform: translateY(0); }
+        .d-1 { transition-delay: 0.1s; } .d-2 { transition-delay: 0.2s; } .d-3 { transition-delay: 0.3s; }
+
+        nav { position: fixed; top: 0; left: 0; width: 100%; padding: 2rem; display: flex; justify-content: space-between; align-items: flex-start; z-index: 100; mix-blend-mode: difference; }
+        .logo { font-weight: bold; text-transform: uppercase; letter-spacing: 0.05em; }
+        .menu a { display: block; text-align: right; text-transform: uppercase; font-size: 0.9rem; margin-bottom: 0.5rem; transition: opacity 0.3s; color: #fff; }
+        .menu a:hover { opacity: 0.5; }
+
+        .section-grid { display: grid; grid-template-columns: 30% 70%; padding: 6rem 2rem; }
+        .section-label { font-size: 0.9rem; text-transform: uppercase; opacity: 0.7; margin-bottom: 2rem; }
+        .bio-text { font-size: 1.5rem; line-height: 1.4; max-width: 800px; margin-bottom: 4rem; text-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+        .services-list li { font-size: 3rem; text-transform: uppercase; list-style: none; border-bottom: 1px solid rgba(255,255,255,0.1); padding: 1.5rem 0; transition: padding-left 0.3s ease; }
+        .services-list li:hover { padding-left: 20px; color: #fff; }
+
+        .solid-bg-section { background-color: transparent; position: relative; z-index: 20; }
+        .trail-section { height: 80vh; display: flex; align-items: center; justify-content: center; position: relative; overflow: hidden; border-bottom: 1px solid #333; }
+        .trail-text { font-size: 9vw; line-height: 0.9; text-align: center; text-transform: uppercase; z-index: 10; pointer-events: none; mix-blend-mode: difference; color: #fff; }
+
+        /* Физика картинок из предыдущего шага */
+        .trail-img { position: absolute; width: 300px; aspect-ratio: 3/4; object-fit: cover; pointer-events: none; z-index: 5; box-shadow: 0 10px 30px rgba(0,0,0,0.5); opacity: 0; transform: translate(-50%, -50%) scale(0.8); filter: grayscale(50%) contrast(1.2) brightness(0.8) blur(10px); transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.4s ease, filter 0.4s ease; }
+        .trail-img.active { opacity: 1; transform: translate(-50%, -50%) scale(1); filter: grayscale(50%) contrast(1.2) brightness(0.8) blur(0px); }
+        .trail-img.evaporate { opacity: 0; transform: translate(-50%, -50%) scale(0.6); filter: grayscale(50%) contrast(1.2) brightness(0.8) blur(25px); transition: transform 1.5s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 1.5s ease, filter 1.5s ease; }
+
+        /* --- ТАКТИЛЬНЫЙ СПИСОК РАБОТ --- */
+        .work-header { padding: 2rem; border-bottom: 1px solid #333; text-transform: uppercase; font-size: 0.9rem; opacity: 0.7; }
+        .work-item { display: flex; align-items: center; padding: 3rem 2rem; border-bottom: 1px solid #333; cursor: pointer; transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1); }
+        .work-item:hover { background-color: #dcdcdc; color: #000; }
+        .work-num { font-size: 1rem; width: 100px; opacity: 0.5; }
+        .work-info { flex-grow: 1; pointer-events: none; }
+        
+        /* Сдвиг заголовка при наведении */
+        .work-title { font-size: 4vw; text-transform: uppercase; margin-bottom: 0.5rem; font-weight: 400; transition: transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1); }
+        .work-item:hover .work-title { transform: translateX(20px); } /* Сдвиг */
+        
+        .work-cat { font-size: 1rem; text-transform: uppercase; opacity: 0.6; }
+        .arrow { font-size: 3rem; transform: rotate(45deg); transition: transform 0.4s; pointer-events: none; }
+        .work-item:hover .arrow { transform: rotate(0deg) translateX(10px); }
+
+        /* --- МАГНИТНЫЙ ФУТЕР --- */
+        footer { padding: 8rem 2rem 6rem 2rem; }
+        .footer-cta { font-size: 10vw; text-transform: uppercase; line-height: 0.9; margin-bottom: 6rem; }
+        .footer-links { display: flex; gap: 3rem; text-transform: uppercase; font-size: 1.2rem; }
+        
+        .magnetic-wrap { display: inline-block; padding: 1rem; cursor: pointer; margin: -1rem; /* Компенсация паддинга */ }
+        .magnetic-text { display: inline-block; will-change: transform; transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
+
+        @media (max-width: 768px) {
+            .section-grid { grid-template-columns: 1fr; }
+            .hero-title { font-size: 14vw; }
+            .center-video-wrapper { width: 60vw; } 
+            .trail-text { font-size: 15vw; }
+            .trail-img { width: 200px; }
+            * { cursor: auto !important; }
+            .custom-cursor { display: none; }
+            .work-item:hover .work-title { transform: translateX(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="custom-cursor" id="cursor"></div>
+    <div class="page-transition" id="pageTransition" style="position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: #050505; z-index: 99998; transform: translateY(100%); transition: transform 0.8s cubic-bezier(0.7, 0, 0.3, 1); pointer-events: none;"></div>
+
+    <div class="loader">
+        <div class="counter">000</div>
+    </div>
+
+    <div class="video-hero-container">
+        <video class="bg-video bg-video-element" autoplay muted loop playsinline>
+            <source src="cin.mp4" type="video/mp4">
+        </video>
+        
+        <div class="center-video-wrapper" id="centerVideo">
+            <video class="center-video" autoplay muted loop playsinline>
+                <source src="cin.mp4" type="video/mp4">
+            </video>
+        </div>
+        <div class="scroll-hint">Click or Scroll</div>
+    </div>
+
+    <nav>
+        <div class="logo">Raccoon4eg_inc</div>
+        <div class="menu">
+            <a href="#work" data-hoverable="true">Work</a>
+            <a href="#about" data-hoverable="true">About</a>
+            <a href="#contact" data-hoverable="true">Contact</a>
+        </div>
+    </nav>
+
+    <div class="main-content">
+        <div class="spacer"></div> 
+
+        <header class="hero glass-panel" id="heroHeader">
+            <h1 class="hero-title">
+                <span class="hero-title-line"><span>Visual</span></span>
+                <span class="hero-title-line"><span style="transition-delay: 0.1s;">Systems</span></span>
+                <span class="hero-title-line"><span class="accent-font" style="transition-delay: 0.2s;">& design</span></span>
+            </h1>
+            <div class="hero-footer reveal-up d-3" style="display: flex; justify-content: space-between; margin-top: auto; text-transform: uppercase; font-size: 0.85rem;">
+                <p>Based in Germany</p>
+                <p>Portfolio 2026</p>
+            </div>
+        </header>
+
+        <section id="about" class="section-grid glass-panel">
+            <div class="column-left">
+                <p class="section-label reveal-up">01 — Profile</p>
+            </div>
+            <div class="column-right">
+                <p class="bio-text reveal-up d-1">
+                    Графический дизайнер. Создаю визуальные системы, паки атмосферных постеров и комплексную айдентику для мероприятий (до и после ивентов).<br><br>
+                    Работаю в открытом симбиозе с AI: концепты создаются нейросетью, а затем профессионально доводятся до идеала вручную в Photoshop. 
+                    Исследую темы <span style="opacity:0.6">биомеханики</span>, <span class="accent-font" style="opacity:0.6; font-size: 1.1em;">русской хтони</span> и <span class="accent-font" style="opacity:0.6; font-size: 1.1em;">dark romanticism</span>.
+                </p>
+                <p class="section-label reveal-up d-2" style="margin-top: 4rem;">02 — Services</p>
+                <ul class="services-list">
+                    <li class="reveal-up d-1"><span class="accent-font" style="text-transform: lowercase; font-size: 1.2em;">art</span> Direction</li>
+                    <li class="reveal-up d-2">Event Identity</li>
+                    <li class="reveal-up d-3">Poster Packs</li>
+                    <li class="reveal-up d-3">Web Design</li>
+                </ul>
+            </div>
+        </section>
+
+        <div class="solid-bg-section">
+            
+            <section id="trail" class="trail-section">
+                <h2 class="trail-text reveal-up">SHAPING<br><span class="accent-font" style="text-transform: lowercase;">aesthetics</span></h2>
+            </section>
+
+            <section id="work">
+                <div class="work-header reveal-up">
+                    <span>03 — Selected Works</span>
+                </div>
+                
+                <div class="work-item reveal-up d-1" data-hoverable="true" id="project-kinetica">
+                    <span class="work-num">01</span>
+                    <div class="work-info">
+                        <h3 class="work-title">KINETICA</h3>
+                        <p class="work-cat">Branding / Prosthetics / Diploma</p>
+                    </div>
+                    <div class="arrow">&nearr;</div>
+                </div>
+
+                <div class="work-item reveal-up d-2" data-hoverable="true">
+                    <span class="work-num">02</span>
+                    <div class="work-info">
+                        <h3 class="work-title">GHOST ON THE ROAD</h3>
+                        <p class="work-cat">Interactive Poster / AR</p>
+                    </div>
+                    <div class="arrow">&nearr;</div>
+                </div>
+
+                <div class="work-item reveal-up d-3" data-hoverable="true">
+                    <span class="work-num">03</span>
+                    <div class="work-info">
+                        <h3 class="work-title">PLATO'S FORMS</h3>
+                        <p class="work-cat">Web Design / Educational</p>
+                    </div>
+                    <div class="arrow">&nearr;</div>
+                </div>
+            </section>
+
+            <footer id="contact">
+                <p class="section-label reveal-up">04 — Contact</p>
+                <h2 class="footer-cta reveal-up d-1">Let's create<br><span class="accent-font" style="text-transform: lowercase;">something raw.</span></h2>
+                
+                <div class="footer-links reveal-up d-2">
+                    <div class="magnetic-wrap" data-hoverable="true">
+                        <a href="#" id="copy-email" class="magnetic-text">Email</a>
+                    </div>
+                    <div class="magnetic-wrap" data-hoverable="true">
+                        <a href="#" class="magnetic-text">Instagram</a>
+                    </div>
+                    <div class="magnetic-wrap" data-hoverable="true">
+                        <a href="https://t.me/Raccoon4eg_inc" class="magnetic-text">Telegram</a>
+                    </div>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            // --- 0. ИНИЦИАЛИЗАЦИЯ ПЛАВНОГО СКРОЛЛА (LENIS) ---
+            const lenis = new Lenis({
+                duration: 1.2,
+                easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+                direction: 'vertical',
+                gestureDirection: 'vertical',
+                smooth: true,
+                mouseMultiplier: 1,
+                smoothTouch: false,
+                touchMultiplier: 2,
+                infinite: false,
+            })
+
+            function raf(time) {
+                lenis.raf(time)
+                requestAnimationFrame(raf)
+            }
+            requestAnimationFrame(raf)
+
+            // --- 1. ПРЕЛОАДЕР И ПОЯВЛЕНИЕ ГЕРОЯ ---
+            const counterElement = document.querySelector(".counter");
+            const loader = document.querySelector(".loader");
+            const heroHeader = document.getElementById("heroHeader");
+            
+            lenis.stop();
+
+            let current = 0;
+            function updateCounter() {
+                const increment = Math.floor(Math.random() * 10) + 1;
+                if (current < 100) {
+                    current += increment;
+                    if (current > 100) current = 100;
+                    counterElement.textContent = current.toString().padStart(3, '0');
+                    setTimeout(updateCounter, Math.floor(Math.random() * 80) + 20);
+                } else {
+                    setTimeout(() => { 
+                        loader.style.transform = "translateY(-100%)"; 
+                        lenis.start();
+                        // Как только уезжает шторка загрузки — выезжает красивый текст!
+                        setTimeout(() => {
+                            heroHeader.classList.add('loaded');
+                        }, 400);
+                    }, 500);
+                }
+            }
+            updateCounter();
+
+            // --- 2. КУРСОР ---
+            const cursor = document.getElementById('cursor');
+            document.addEventListener('mousemove', (e) => {
+                cursor.style.left = e.clientX + 'px';
+                cursor.style.top = e.clientY + 'px';
+            });
+            const hoverables = document.querySelectorAll('a, [data-hoverable="true"], .services-list li');
+            hoverables.forEach(elem => {
+                elem.addEventListener('mouseenter', () => cursor.classList.add('hovered'));
+                elem.addEventListener('mouseleave', () => cursor.classList.remove('hovered'));
+            });
+
+            // --- 3. АНИМАЦИЯ ПОЯВЛЕНИЯ ЭЛЕМЕНТОВ (SCROLL REVEAL) ---
+            const revealElements = document.querySelectorAll('.reveal-up');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('in-view');
+                    }
+                });
+            }, { threshold: 0.1, rootMargin: "0px 0px -50px 0px" });
+            revealElements.forEach(el => observer.observe(el));
+
+            // --- 4. ЭФФЕКТЫ СКРОЛЛА ВИДЕО ---
+            const bgVideo = document.querySelector('.bg-video-element');
+            const centerVideo = document.getElementById('centerVideo');
+            
+            lenis.on('scroll', (e) => {
+                const scrollY = e.animatedScroll; 
+                const windowHeight = window.innerHeight;
+                
+                let progress = scrollY / windowHeight;
+                if (progress > 1) progress = 1;
+                if (progress < 0) progress = 0;
+
+                const blurValue = progress * 20;
+                const brightness = 1 - progress * 0.4;
+                const scaleValue = 1 - (progress * 0.35); 
+                const borderRadius = progress * 60; 
+
+                bgVideo.style.filter = `blur(${blurValue}px) brightness(${brightness})`;
+                bgVideo.style.transform = `scale(${scaleValue})`;
+                bgVideo.style.borderRadius = `${borderRadius}px`;
+
+                centerVideo.style.opacity = 1 - progress * 2;
+
+                let fadeStart = windowHeight * 0.8; 
+                let fadeEnd = windowHeight * 1.8; 
+                let fadeProgress = (scrollY - fadeStart) / (fadeEnd - fadeStart);
+                if (fadeProgress < 0) fadeProgress = 0;
+                if (fadeProgress > 1) fadeProgress = 1;
+
+                bgVideo.style.opacity = 0.6 * (1 - fadeProgress);
+            });
+
+            // --- 5. IMAGE TRAIL (SHAPING AESTHETICS) ---
+            const trailSection = document.getElementById('trail');
+            const images = [
+                'm1.png?q=80&w=600&auto=format&fit=crop',
+                '3.png?q=80&w=600&auto=format&fit=crop',
+                '13.png?q=80&w=600&auto=format&fit=crop',
+                'z.png?q=80&w=600&auto=format&fit=crop',
+                '123123.png?q=80&w=600&auto=format&fit=crop',
+                's.png?q=80&w=600&auto=format&fit=crop',
+                'v.png?q=80&w=600&auto=format&fit=crop',
+                'nik.jpg?q=80&w=600&auto=format&fit=crop',
+                'd.png?q=80&w=600&auto=format&fit=crop',
+            ];
+
+            let lastX = 0; let lastY = 0; let imgIndex = 0; const distanceThreshold = 150;
+
+            trailSection.addEventListener('mousemove', (e) => {
+                const rect = trailSection.getBoundingClientRect();
+                const x = e.clientX - rect.left; const y = e.clientY - rect.top;
+                const dist = Math.hypot(x - lastX, y - lastY);
+                if (dist > distanceThreshold) { lastX = x; lastY = y; createTrailImage(x, y); }
+            });
+
+            function createTrailImage(x, y) {
+                const img = document.createElement('img');
+                img.src = images[imgIndex % images.length];
+                img.className = 'trail-img';
+                img.style.left = x + 'px'; img.style.top = y + 'px';
+                
+                const randomRotation = (Math.random() - 0.5) * 30; 
+                trailSection.appendChild(img); imgIndex++;
+
+                void img.offsetWidth;
+                
+                img.classList.add('active');
+                img.style.transform = `translate(-50%, -50%) scale(1) rotate(${randomRotation}deg)`;
+
+                setTimeout(() => {
+                    img.classList.remove('active');
+                    img.classList.add('evaporate');
+                    img.style.transform = `translate(-50%, -50%) scale(0.6) rotate(${randomRotation}deg)`;
+                    setTimeout(() => { img.remove(); }, 1500);
+                }, 800); 
+            }
+
+            // --- 6. МАГНИТНЫЕ ССЫЛКИ ---
+            const magnetics = document.querySelectorAll('.magnetic-wrap');
+            magnetics.forEach(wrap => {
+                const text = wrap.querySelector('.magnetic-text');
+                wrap.addEventListener('mousemove', (e) => {
+                    const rect = wrap.getBoundingClientRect();
+                    const x = e.clientX - rect.left - rect.width / 2;
+                    const y = e.clientY - rect.top - rect.height / 2;
+                    // Тянем текст за мышкой
+                    text.style.transform = `translate(${x * 0.3}px, ${y * 0.3}px)`;
+                });
+                wrap.addEventListener('mouseleave', () => {
+                    // Возвращаем на место
+                    text.style.transform = `translate(0px, 0px)`;
+                });
+            });
+
+            // --- 7. КОПИРОВАНИЕ EMAIL ---
+            const emailLink = document.getElementById('copy-email');
+            const yourEmail = 'raccoon4eg@gmail.com'; 
+
+            if (emailLink) {
+                emailLink.addEventListener('click', (e) => {
+                    e.preventDefault(); 
+                    navigator.clipboard.writeText(yourEmail).then(() => {
+                        const originalText = emailLink.innerText;
+                        emailLink.innerText = 'Copied!';
+                        emailLink.style.color = '#fff'; 
+                        setTimeout(() => {
+                            emailLink.innerText = originalText;
+                            emailLink.style.color = ''; 
+                        }, 2000);
+                    });
+                });
+            }
+
+            // --- 8. ПЕРЕХОД НА СТРАНИЦУ ПРОЕКТА ---
+            const kineticaBtn = document.getElementById('project-kinetica');
+            const pageTransition = document.getElementById('pageTransition');
+
+            if (kineticaBtn) {
+                kineticaBtn.addEventListener('click', () => {
+                    pageTransition.style.transform = 'translateY(0)';
+                    setTimeout(() => { window.location.href = 'kinetica1.html'; }, 800);
+                });
+            }
+
+        });
+    </script>
+</body>
+</html>
