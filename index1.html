@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kinetica: OS v3.0</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400;700&family=Neue+Haas+Grotesk+Display+Pro:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/@studio-freight/lenis@1.0.33/dist/lenis.css">
+
+    <style>
+        :root {
+            --bg: #030303;
+            --text: rgba(255, 255, 255, 0.85);
+            --accent: #fff;
+            --border: rgba(255, 255, 255, 0.15);
+            --tars-font: 'JetBrains Mono', 'Inter', monospace;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body, html {
+            background-color: var(--bg); color: var(--text);
+            font-family: var(--tars-font); cursor: none;
+            overflow-x: hidden; overscroll-behavior: none;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        #preloader {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: var(--bg); z-index: 99999; display: flex;
+            flex-direction: column; justify-content: flex-end; padding: 4vw;
+            font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+            color: #555; pointer-events: none;
+        }
+        .boot-line { margin-bottom: 5px; opacity: 0; }
+        .boot-active { color: var(--accent); }
+
+        .noise-overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 9999; opacity: 0.35; mix-blend-mode: overlay; }
+        
+        .telemetry { position: fixed; top: 50%; left: 2vw; transform: translateY(-50%); font-size: 9px; letter-spacing: 2px; color: #444; z-index: 100; writing-mode: vertical-rl; text-transform: uppercase; pointer-events: none; }
+        #depthCounter { color: var(--accent); font-weight: 700; }
+
+        .tars-cursor { position: fixed; top: 0; left: 0; width: 4px; height: 4px; background: var(--accent); pointer-events: none; z-index: 10000; transform: translate(-50%, -50%); mix-blend-mode: exclusion; }
+        .tars-cursor-follower { position: fixed; top: 0; left: 0; width: 32px; height: 32px; border: 1px solid rgba(255, 255, 255, 0.3); pointer-events: none; z-index: 9998; transform: translate(-50%, -50%); transition: width 0.3s, height 0.3s, background-color 0.3s; mix-blend-mode: exclusion; }
+        .tars-cursor-follower.active { width: 64px; height: 64px; border-color: transparent; background-color: rgba(255, 255, 255, 0.1); backdrop-filter: blur(2px); }
+
+        .viewport { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; perspective: 1200px; z-index: 10; pointer-events: none; }
+        .world { position: absolute; width: 100%; height: 100%; transform-style: preserve-3d; }
+        
+        .card { position: absolute; top: 50%; left: 50%; transform-origin: center center; will-change: transform, opacity; }
+        .card img { width: 100%; height: 100%; display: block; object-fit: cover; filter: grayscale(100%) contrast(120%) brightness(0.7); box-shadow: 0 10px 30px rgba(0,0,0, 0.9); }
+        
+        .tunnel-card { width: clamp(200px, 20vw, 350px); } 
+        .hero-card { width: clamp(15px, 2vw, 30px); height: clamp(80px, 10vw, 160px); border-radius: 0; overflow: hidden; background: #111; } 
+
+        .title-wrapper { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; z-index: 20; opacity: 0; transform-style: preserve-3d; }
+        .end-title { font-family: 'Neue Haas Grotesk Display Pro', sans-serif; font-weight: 700; font-size: clamp(3rem, 10vw, 12rem); color: var(--accent); letter-spacing: -0.05em; text-shadow: 0 0 60px rgba(0,0,0,1); text-transform: lowercase; pointer-events: none; line-height: 0.8; margin-top: -2%; }
+
+        .tars-container, .tars-container-right { position: absolute; top: 50%; width: clamp(280px, 22vw, 360px); transform: translateY(-50%); z-index: 25; opacity: 0; pointer-events: none; }
+        .tars-container { left: 4vw; text-align: left; } .tars-container-right { right: 4vw; text-align: right; }
+        
+        .tars-border { border-left: 1px solid var(--accent); padding-left: 20px; display: flex; flex-direction: column; gap: 20px; }
+        .tars-border-right { border-right: 1px solid var(--accent); padding-right: 20px; display: flex; flex-direction: column; gap: 20px; }
+        
+        .tars-header { font-size: 10px; letter-spacing: 3px; opacity: 0.4; font-weight: 600; display: block;}
+        .tars-body { font-size: 11px; line-height: 1.6; text-transform: uppercase; color: #aaa;}
+        
+        .value-block { display: flex; flex-direction: column; gap: 6px; }
+        .value-title { color: var(--accent); font-weight: 700; font-size: 11px; letter-spacing: 1px; }
+        .value-desc { font-size: 9px; opacity: 0.6; line-height: 1.5; text-transform: uppercase; }
+        .blink-cursor { display: inline-block; width: 8px; height: 12px; background: var(--accent); animation: blink 1s infinite; margin-left:8px; vertical-align: middle;}
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+
+        .products-dock { position: absolute; bottom: 4vh; left: 50%; transform: translateX(-50%); display: flex; gap: 20px; z-index: 30; opacity: 0; pointer-events: auto; }
+        
+        .product-card { width: 220px; background: rgba(5, 5, 5, 0.7); border: 1px solid var(--border); backdrop-filter: blur(10px); transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); display: flex; flex-direction: column; position: relative; cursor: none; }
+        .product-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 0; background: var(--accent); transition: height 0.4s ease; z-index: 0; }
+        .product-card:hover { border-color: var(--accent); transform: translateY(-8px); }
+        .product-card:hover::before { height: 2px; }
+        
+        .p-image { width: 100%; height: 140px; background: #000; overflow: hidden; position: relative; z-index: 1; padding: 1px; }
+        .p-image img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(100%) contrast(120%); transition: 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+        .product-card:hover .p-image img { transform: scale(1.08); filter: grayscale(50%) contrast(110%); }
+        
+        .p-meta { padding: 16px; display: flex; flex-direction: column; gap: 8px; z-index: 1; }
+        .p-header { display: flex; justify-content: space-between; align-items: flex-start; }
+        .p-id { font-size: 9px; color: #666; letter-spacing: 2px; }
+        .p-status { font-size: 8px; color: var(--accent); background: rgba(255,255,255,0.1); padding: 2px 6px; }
+        .p-title { color: var(--accent); font-family: 'Neue Haas Grotesk Display Pro', sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
+        .p-desc { color: #888; font-family: 'Inter', sans-serif; font-size: 10px; line-height: 1.4; font-weight: 300; }
+        
+        .p-footer { border-top: 1px solid var(--border); padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; z-index: 1; background: rgba(0,0,0,0.4); }
+        .p-spec { font-size: 9px; color: #555; }
+        .p-price { font-size: 12px; color: var(--accent); font-weight: 700; font-family: 'Neue Haas Grotesk Display Pro', sans-serif;}
+
+        .creator-credit { position: fixed; bottom: 2vw; right: 2vw; font-size: 9px; color: #444; text-align: right; z-index: 100; text-transform: uppercase; letter-spacing: 1px;}
+        .creator-credit span { color: #888; }
+
+        .scroll-dist { height: 16000px; width: 100%; position: relative; z-index: 0; }
+
+        /* =========================================
+           MOBILE SPECIFIC STYLES (THE OVERHAUL) 
+           ========================================= */
+        @media (max-width: 768px) {
+            body, html { 
+                cursor: auto; 
+                overflow-y: auto !important; /* Гарантируем вертикальный скролл */
+                overscroll-behavior: auto !important; /* Возвращаем нативное поведение резинового скролла */
+                touch-action: pan-y; /* Разрешаем вертикальные свайпы */
+            }
+            .tars-cursor, .tars-cursor-follower, .telemetry, .scroll-dist { display: none !important; }
+            .creator-credit { bottom: auto; top: 20px; right: 20px; z-index: 999; }
+            
+            /* 3D Viewport is just a fixed background on mobile */
+            .viewport { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; }
+            .title-wrapper { align-items: flex-start; top: 15vh; }
+            .end-title { font-size: 18vw; }
+
+            /* Container for UI elements that allows native scrolling */
+            .mobile-ui-layer {
+                position: relative; z-index: 20;
+                margin-top: 60vh; /* Pushes content below the logo */
+                padding: 0 5vw 10vh 5vw;
+                display: flex; flex-direction: column; gap: 20px;
+                opacity: 0; transform: translateY(30px);
+                min-height: 100vh; /* Убеждаемся, что блоку есть куда тянуться */
+            }
+
+            /* Restyling panels for standard block flow */
+            .tars-container, .tars-container-right {
+                position: relative !important;
+                top: auto !important; left: auto !important; right: auto !important; bottom: auto !important;
+                transform: none !important;
+                width: 100% !important;
+                opacity: 1 !important;
+                background: rgba(10, 10, 10, 0.7);
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(255,255,255,0.1);
+                border-radius: 8px; padding: 20px; text-align: left;
+                pointer-events: auto;
+            }
+            .tars-border-right { border-right: none; padding-right: 0; border-left: 1px solid var(--accent); padding-left: 20px; }
+
+            /* Mobile swipable dock */
+            .products-dock {
+                position: relative !important;
+                bottom: auto !important; left: auto !important; transform: none !important;
+                width: 100vw !important; margin-left: -5vw; /* Bleed out of padding */
+                display: flex !important; opacity: 1 !important;
+                overflow-x: auto; padding: 10px 5vw 30px 5vw; gap: 15px;
+                scroll-snap-type: x mandatory; justify-content: flex-start;
+                pointer-events: auto;
+            }
+            .products-dock::-webkit-scrollbar { display: none; }
+            .product-card {
+                min-width: 80vw; max-width: 80vw;
+                scroll-snap-align: center;
+                flex-shrink: 0; border-radius: 8px;
+            }
+            .product-card:hover { transform: none; } /* Disable hover lift on mobile */
+
+            /* Skip Intro Button */
+            .skip-btn {
+                position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%);
+                z-index: 100; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.3);
+                color: var(--accent); padding: 12px 24px; font-family: var(--tars-font);
+                font-size: 10px; text-transform: uppercase; letter-spacing: 2px;
+                border-radius: 30px; backdrop-filter: blur(5px); cursor: pointer;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="preloader">
+        <div class="boot-line">INIT_CORE_SYSTEMS... OK</div>
+        <div class="boot-line">NEURAL_LINK_ESTABLISHED... OK</div>
+        <div class="boot-line">LOADING_MANIFESTO_DATA... OK</div>
+        <div class="boot-line boot-active">KINETICA_OS_V3.0_ONLINE. WAKE UP.</div>
+    </div>
+
+    <svg class="noise-overlay">
+        <filter id="noiseFilter"><feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" stitchTiles="stitch"/></filter>
+        <rect width="100%" height="100%" filter="url(#noiseFilter)"></rect>
+    </svg>
+
+    <div class="telemetry">DEPTH_TRACKER: <span id="depthCounter">0000</span>m // STATUS: NOMINAL</div>
+    <div class="tars-cursor"></div>
+    <div class="tars-cursor-follower"></div>
+
+    <div class="creator-credit">SYSTEM ARCHITECT: <span>RACCOON4EG</span><br>DIPLOMA THESIS</div>
+
+    <div class="viewport" id="viewport">
+        <div class="world" id="world">
+            <div class="title-wrapper" id="titleWrapper">
+                <div class="end-title" data-value="kinetica.">kinetica.</div>
+            </div>
+
+            <div class="tars-container" id="tarsLeft">
+                <div class="tars-border">
+                    <div>
+                        <span class="tars-header">// MANIFESTO</span>
+                        <div class="tars-body">Kinetica — это бунт в премиальной оболочке. Наша цель — создавать дерзкие, высокоточные биомеханические решения, которые бросают вызов устоявшимся нормам.<br><br>Мы не идем на компромиссы: в нашей ДНК — аристократичное качество материалов, смелость инженерной мысли и эстетика, которая не просит разрешения.<span class="blink-cursor"></span></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="tars-container-right" id="tarsRight">
+                <div class="tars-border-right">
+                    <span class="tars-header">// DATABASE_VALUES</span>
+                    <div class="value-block"><div class="value-title">[01] ТЕХНОЛОГИЧЕСКОЕ БУНТАРСТВО</div><div class="value-desc">Мы отвергаем концепцию «достаточно хорошего».</div></div>
+                    <div class="value-block"><div class="value-title">[02] БЕСКОМПРОМИССНОЕ СОВЕРШЕНСТВО</div><div class="value-desc">Каждый элемент доводится до состояния искусства.</div></div>
+                    <div class="value-block"><div class="value-title">[03] ЭТИКА ЭВОЛЮЦИИ</div><div class="value-desc">Устройства как часть личности. Шрамы как архитектура.</div></div>
+                </div>
+            </div>
+
+            <div class="products-dock" id="productsDock">
+                <div class="product-card hover-target">
+                    <div class="p-image"><img src="https://images.unsplash.com/photo-1597733336794-12d05021d510?q=80&w=400&auto=format&fit=crop" alt="Core"></div>
+                    <div class="p-meta">
+                        <div class="p-header"><span class="p-id">ID: 89-A</span><span class="p-status">ACTIVE</span></div>
+                        <div class="p-title">NEURO_CORE</div>
+                        <div class="p-desc">Когнитивный ускоритель V.9. Квантовая архитектура связей.</div>
+                    </div>
+                    <div class="p-footer"><span class="p-spec">SYNC: 98.4%</span><span class="p-price">$450,000</span></div>
+                </div>
+                
+                <div class="product-card hover-target">
+                    <div class="p-image"><img src="https://images.unsplash.com/photo-1589254065878-42c9da997008?q=80&w=400&auto=format&fit=crop" alt="Eye"></div>
+                    <div class="p-meta">
+                        <div class="p-header"><span class="p-id">ID: 04-X</span><span class="p-status">ACTIVE</span></div>
+                        <div class="p-title">OCULUS_X</div>
+                        <div class="p-desc">Мультиспектральная оптика. Макро-зум и тепловизор.</div>
+                    </div>
+                    <div class="p-footer"><span class="p-spec">OPTICS: X500</span><span class="p-price">$85,000</span></div>
+                </div>
+
+                <div class="product-card hover-target">
+                    <div class="p-image"><img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=400&auto=format&fit=crop" alt="Hand"></div>
+                    <div class="p-meta">
+                        <div class="p-header"><span class="p-id">ID: 22-B</span><span class="p-status">PROTOTYPE</span></div>
+                        <div class="p-title">TITAN_GRIP</div>
+                        <div class="p-desc">Тактильный протез. Каркас из полимерного титана.</div>
+                    </div>
+                    <div class="p-footer"><span class="p-spec">FORCE: 12kN</span><span class="p-price">$120,000</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="scroll-dist"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <script src="https://unpkg.com/@studio-freight/lenis@1.0.33/dist/lenis.min.js"></script>
+
+    <script>
+        // Инициализация переменных и библиотек
+        const isMobile = window.innerWidth <= 768;
+        gsap.registerPlugin(ScrollTrigger);
+        
+        if ('scrollRestoration' in history) { history.scrollRestoration = 'manual'; }
+
+        const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*";
+        function scrambleText(element) {
+            let iterations = 0; const originalText = element.dataset.value;
+            const interval = setInterval(() => {
+                element.innerText = originalText.split("").map((letter, index) => {
+                    if(index < iterations) return originalText[index];
+                    return letters[Math.floor(Math.random() * 26)];
+                }).join("");
+                if(iterations >= originalText.length) clearInterval(interval);
+                iterations += 1 / 3;
+            }, 30);
+        }
+
+        const bootLines = document.querySelectorAll('.boot-line');
+        const preloader = document.getElementById('preloader');
+        const tl = gsap.timeline();
+        bootLines.forEach((line, index) => { tl.to(line, { opacity: 1, duration: 0.1, delay: index * 0.3 }); });
+        tl.to(preloader, { opacity: 0, duration: 0.8, delay: 0.5, onComplete: () => { preloader.style.display = 'none'; }});
+
+        const world = document.getElementById('world');
+        const titleWrapper = document.getElementById('titleWrapper');
+        const endTitle = document.querySelector('.end-title');
+        const tarsLeft = document.getElementById('tarsLeft');
+        const tarsRight = document.getElementById('tarsRight');
+        const productsDock = document.getElementById('productsDock');
+        const depthCounter = document.getElementById('depthCounter');
+
+        // Создаем сцену 3D
+        const imageUrls = [
+            "vova kinetica 2.png?q=80&w=600&auto=format&fit=crop",
+            "vova ч 2.png?q=80&w=600&auto=format&fit=crop",
+            "беспорядок спичка плащ 2.png?q=80&w=600&auto=format&fit=crop",
+            "lapki.png?q=80&w=600&auto=format&fit=crop",
+            "qwer3.jpg?q=80&w=600&auto=format&fit=crop",
+            "shadow girl logo noise.png?q=80&w=600&auto=format&fit=crop",
+            "eye kinetica 2.png?q=80&w=600&auto=format&fit=crop",
+            "qwer1.png?q=80&w=600&auto=format&fit=crop",
+            "qwer.jpg?q=80&w=600&auto=format&fit=crop",
+            "kinetica girl new 2.png?q=80&w=600&auto=format&fit=crop",
+            "Man in black 2.png?q=80&w=600&auto=format&fit=crop",
+            "girl cigarette icon distressed 2 noise.png?q=80&w=600&auto=format&fit=crop"
+        ];
+
+        const tunnelCardsCount = 10;
+        const heroCardsCount = 60; 
+        const zStep = 1500;
+        const lastTunnelZ = -1000 - ((tunnelCardsCount - 1) * zStep);
+        const finishZ = lastTunnelZ - 4000; 
+
+        const tunnelElements = [];
+        const heroElements = [];
+
+        for (let i = 0; i < tunnelCardsCount; i++) {
+            const div = document.createElement('div'); div.className = 'card tunnel-card';
+            const img = document.createElement('img'); img.src = imageUrls[i % imageUrls.length];
+            div.appendChild(img); world.appendChild(div); tunnelElements.push(div);
+            gsap.set(div, { z: -1000 - (i * zStep), x: (Math.random() - 0.5) * window.innerWidth * 0.6, y: (Math.random() - 0.5) * window.innerHeight * 0.6, rotationZ: (Math.random() - 0.5) * 30 });
+        }
+
+        for (let i = 0; i < heroCardsCount; i++) {
+            const div = document.createElement('div'); div.className = 'card hero-card';
+            const img = document.createElement('img'); img.src = imageUrls[i % imageUrls.length];
+            div.appendChild(img); world.appendChild(div); heroElements.push(div);
+            
+            const angle = (i / heroCardsCount) * Math.PI * 2;
+            const maxDim = Math.max(window.innerWidth, window.innerHeight);
+            const radius = isMobile ? maxDim * 0.45 : maxDim * 0.35;
+            
+            div.dataset.ringX = Math.cos(angle) * radius; div.dataset.ringY = Math.sin(angle) * radius;
+            div.dataset.ringZ = finishZ - 800; div.dataset.ringRot = angle * (180/Math.PI) + 90;
+            div.dataset.scatterX = (Math.random() - 0.5) * window.innerWidth * 3;
+            div.dataset.scatterY = (Math.random() - 0.5) * window.innerHeight * 3;
+            div.dataset.scatterZ = finishZ + 3000 + (Math.random() * 2000); 
+            div.dataset.scatterRot = (Math.random() - 0.5) * 360;
+            
+            gsap.set(div, { x: div.dataset.scatterX, y: div.dataset.scatterY, z: div.dataset.scatterZ, rotationZ: div.dataset.scatterRot, opacity: 0 });
+        }
+
+        const totalDistance = Math.abs(finishZ);
+
+        // Функция обновления 3D сцены
+        function updateSceneElements(currentWorldZ, progress) {
+            if (!isMobile) { gsap.set(world, { x: Math.sin(currentWorldZ * 0.001) * 60, y: Math.cos(currentWorldZ * 0.0015) * 30 }); }
+
+            tunnelElements.forEach(card => {
+                const dist = currentWorldZ + gsap.getProperty(card, "z");
+                if (dist < -4000 || dist > 2000) { card.style.opacity = 0; }
+                else {
+                    card.style.opacity = dist < 0 ? (dist + 4000) / 4000 : 1 - (dist / 2000);
+                    card.style.filter = `grayscale(100%) blur(${dist > 0 ? dist / 120 : 0}px) brightness(${1 - (dist/3000)})`;
+                }
+            });
+
+            let assemblyProgress = Math.max(0, Math.min(1, (progress - 0.6) / 0.4));
+            const easeProgress = gsap.parseEase("power3.out")(assemblyProgress);
+
+            heroElements.forEach((card) => {
+                card.style.opacity = assemblyProgress * 0.4; 
+                const currentX = parseFloat(card.dataset.scatterX) + (parseFloat(card.dataset.ringX) - parseFloat(card.dataset.scatterX)) * easeProgress;
+                const currentY = parseFloat(card.dataset.scatterY) + (parseFloat(card.dataset.ringY) - parseFloat(card.dataset.scatterY)) * easeProgress;
+                const currentZ = parseFloat(card.dataset.scatterZ) + (parseFloat(card.dataset.ringZ) - parseFloat(card.dataset.scatterZ)) * easeProgress;
+                const currentRot = parseFloat(card.dataset.scatterRot) + (parseFloat(card.dataset.ringRot) - parseFloat(card.dataset.scatterRot)) * easeProgress;
+                const continuousRot = easeProgress === 1 ? parseFloat(card.dataset.currentRot || 0) + 0.05 : 0;
+                if (easeProgress === 1) card.dataset.currentRot = continuousRot;
+                gsap.set(card, { x: currentX, y: currentY, z: currentZ, rotationZ: currentRot + (easeProgress === 1 ? continuousRot : 0) });
+            });
+        }
+
+        // ==========================================
+        // ЛОГИКА ДЛЯ МОБИЛЬНЫХ УСТРОЙСТВ (АВТО-ПРОЛЕТ)
+        // ==========================================
+        if (isMobile) {
+            // Перемещаем UI элементы в нативный мобильный поток
+            gsap.set([tarsLeft, tarsRight, productsDock], { clearProps: "all" });
+            const uiLayer = document.createElement('div');
+            uiLayer.className = 'mobile-ui-layer';
+            document.body.appendChild(uiLayer);
+            uiLayer.appendChild(tarsLeft);
+            uiLayer.appendChild(tarsRight);
+            uiLayer.appendChild(productsDock);
+
+            // Кнопка пропуска
+            const skipBtn = document.createElement('button');
+            skipBtn.className = 'skip-btn'; skipBtn.innerText = 'SKIP INTRO';
+            document.body.appendChild(skipBtn);
+
+            // Блокируем скролл во время анимации, сохраняя возможность прокрутки после
+            document.documentElement.style.overflow = "hidden";
+            document.body.style.overflow = "hidden";
+            gsap.set(titleWrapper, { z: finishZ });
+
+            let textScrambled = false;
+            let introTl = gsap.timeline({
+                delay: 2.5, // Ждем пока пройдет прелоадер
+                onComplete: () => {
+                    // Жестко сносим инлайн-стили блокировки
+                    document.documentElement.style.removeProperty("overflow");
+                    document.body.style.removeProperty("overflow");
+                    
+                    gsap.to('.mobile-ui-layer', { opacity: 1, y: 0, duration: 1.5, ease: "power3.out" });
+                    if(skipBtn.parentNode) gsap.to(skipBtn, { opacity: 0, duration: 0.5, onComplete: () => skipBtn.remove() });
+                }
+            });
+
+            introTl.to(world, {
+                z: totalDistance,
+                duration: 4.5, // Длительность пролета
+                ease: "power2.inOut",
+                onUpdate: function() {
+                    const prog = this.progress();
+                    updateSceneElements(gsap.getProperty(world, "z"), prog);
+                    titleWrapper.style.opacity = Math.max(0, Math.min(1, (prog - 0.7) / 0.3));
+                    if(prog > 0.85 && !textScrambled) { scrambleText(endTitle); textScrambled = true; }
+                }
+            });
+
+            skipBtn.addEventListener('click', () => { introTl.progress(1); });
+
+        } 
+        // ==========================================
+        // ЛОГИКА ДЛЯ ДЕСКТОПА (РУЧНОЙ СКРОЛЛ)
+        // ==========================================
+        else {
+            const lenis = new Lenis({ duration: 1.5, easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), smooth: true });
+            function raf(time) { lenis.raf(time); requestAnimationFrame(raf); }
+            requestAnimationFrame(raf);
+
+            const cursorDot = document.querySelector('.tars-cursor');
+            const cursorFollower = document.querySelector('.tars-cursor-follower');
+            let mouseX = window.innerWidth / 2, mouseY = window.innerHeight / 2;
+            let fX = mouseX, fY = mouseY;
+
+            window.addEventListener('mousemove', (e) => { mouseX = e.clientX; mouseY = e.clientY; gsap.to(cursorDot, { x: mouseX, y: mouseY, duration: 0 }); });
+            gsap.ticker.add(() => { fX += (mouseX - fX) * 0.15; fY += (mouseY - fY) * 0.15; gsap.set(cursorFollower, { x: fX, y: fY }); });
+            document.querySelectorAll('.hover-target').forEach(el => { el.addEventListener('mouseenter', () => cursorFollower.classList.add('active')); el.addEventListener('mouseleave', () => cursorFollower.classList.remove('active')); });
+
+            gsap.set(titleWrapper, { z: finishZ });
+            gsap.set(tarsLeft, { z: finishZ });
+            gsap.set(tarsRight, { z: finishZ });
+            gsap.set(productsDock, { z: finishZ + 200 });
+
+            let textScrambled = false;
+
+            gsap.to(world, {
+                z: totalDistance, ease: "none",
+                scrollTrigger: {
+                    trigger: ".scroll-dist", start: "top top", end: "bottom bottom", scrub: 1,
+                    onUpdate: (self) => {
+                        const currentZ = gsap.getProperty(world, "z");
+                        updateSceneElements(currentZ, self.progress);
+                        
+                        if(depthCounter) { depthCounter.innerText = Math.floor(self.progress * 9999).toString().padStart(4, '0'); }
+                        if(self.progress > 0.85 && !textScrambled) { scrambleText(endTitle); textScrambled = true; } 
+                        else if (self.progress < 0.8) { textScrambled = false; }
+
+                        const uiProgress = Math.max(0, Math.min(1, (currentZ + finishZ + 4500) / 4500));
+                        titleWrapper.style.opacity = uiProgress;
+                        tarsLeft.style.opacity = Math.max(0, (uiProgress - 0.2) * 1.25);
+                        tarsRight.style.opacity = Math.max(0, (uiProgress - 0.2) * 1.25);
+                        const dockProgress = Math.max(0, (uiProgress - 0.4) * 1.6);
+                        productsDock.style.opacity = dockProgress;
+                        productsDock.style.transform = `translateX(-50%) translateY(${(1 - dockProgress) * 50}px)`;
+                    }
+                }
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                const x = (e.clientX / window.innerWidth) * 2 - 1; const y = (e.clientY / window.innerHeight) * 2 - 1;
+                gsap.to(titleWrapper, { rotationY: x * 6, rotationX: -y * 6, duration: 1.5, ease: "power2.out" });
+                gsap.to(tarsLeft, { x: x * -10, y: y * -10, duration: 1.2, ease: "power2.out" });
+                gsap.to(tarsRight, { x: x * 10, y: y * 10, duration: 1.2, ease: "power2.out" });
+                gsap.to(productsDock, { xPercent: -50 + (x * 2), y: y * 10, duration: 1, ease: "power2.out" });
+                gsap.to(world, { rotationY: x * 2, rotationX: -y * 2, duration: 2, ease: "power2.out" });
+            });
+        }
+    </script>
+</body>
+</html>
